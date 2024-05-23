@@ -4,8 +4,11 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../providers/AuthProvider";
 import Swal from "sweetalert2";
+import useAxiosPublic from "../../hooks/useAxiosPublic";
+import SocialLogin from "../../components/SocialLogin/SocialLogin";
 
 const SingUp = () => {
+  const axiosPublic = useAxiosPublic();
   const {
     register,
     handleSubmit,
@@ -13,25 +16,33 @@ const SingUp = () => {
     formState: { errors },
   } = useForm();
   const { createUser, updateUserProfile } = useContext(AuthContext);
-  const navigator =useNavigate();
+  const navigator = useNavigate();
 
   const onSubmit = (data) => {
-    console.log(data);
     createUser(data.email, data.password).then((result) => {
       const loggedUser = result.user;
       console.log(loggedUser);
       updateUserProfile(data.name, data.photoURL)
         .then(() => {
-          console.log("profile updated");
-          reset();
-          Swal.fire({
-            position: "top-status",
-            icon: "success",
-            title: "user created successfully",
-            showConfirmButton: false,
-            timer: 1500,
+          // create user entry in the database
+          const userInfo = {
+            name: data.name,
+            email: data.email,
+          };
+          axiosPublic.post("users", userInfo).then((res) => {
+            if (res.data.insertedId) {
+              console.log('user added to database');
+              reset();
+              Swal.fire({
+                position: "top-status",
+                icon: "success",
+                title: "user created successfully",
+                showConfirmButton: false,
+                timer: 1500,
+              });
+              navigator("/");
+            }
           });
-          navigator('/')
         })
         .catch((error) => console.log(error));
     });
@@ -72,7 +83,6 @@ const SingUp = () => {
                   {...register("name", { required: true })}
                   name="name"
                   className="input input-bordered"
-                 
                 />
                 {errors.name && (
                   <span className="text-red-700">This field is required</span>
@@ -87,7 +97,6 @@ const SingUp = () => {
                   placeholder="Photo URL"
                   {...register("photoURL", { required: true })}
                   className="input input-bordered"
-                
                 />
                 {errors.photoURL && (
                   <span className="text-red-700">photo url is required</span>
@@ -103,7 +112,6 @@ const SingUp = () => {
                   {...register("email", { required: true })}
                   name="email"
                   className="input input-bordered"
-                 
                 />
                 {errors.email && (
                   <span className="text-red-700">This field is required</span>
@@ -123,7 +131,6 @@ const SingUp = () => {
                   })}
                   name="password"
                   className="input input-bordered"
-                  
                 />
                 {errors.password && (
                   <span className="text-red-700">This field is required</span>
@@ -142,7 +149,8 @@ const SingUp = () => {
                 />
               </div>
             </form>
-            <p className="text-center mb-3">
+            <SocialLogin></SocialLogin>
+            <p className="text-center mb-3 px-7">
               <small>
                 New Here ? <Link to="/login">Create an account</Link>
               </small>
